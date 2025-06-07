@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      '@m1nsuppp/prettier-config':
+        specifier: ^0.0.2
+        version: 0.0.2(prettier@3.5.3)
     devDependencies:
       prettier:
         specifier: ^3.5.3
@@ -614,6 +618,11 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.25':
     resolution: {integrity: sha512-vNk6aEwybGtawWmy/PzwnGDOjCkLWSD2wqvjGGAgOAwCGWySYXfYoxt00IJkTF+8Lb57DwOb3Aa0o9CApepiYQ==}
+
+  '@m1nsuppp/prettier-config@0.0.2':
+    resolution: {integrity: sha512-brXibP/+ZmPFoIr4y2oJGYyX91bCH0knP6PnTL8eri4n2Yln2qJ0OX+VyaXMOrFQjgTSDXfjqWRafkBRfgO6PA==}
+    peerDependencies:
+      prettier: ^3
 
   '@next/env@15.3.0':
     resolution: {integrity: sha512-6mDmHX24nWlHOlbwUiAOmMyY7KELimmi+ed8qWcJYjqXeC+G6JzPZ3QosOAfjNwgMIzwhXBiRiCgdh8axTTdTA==}
@@ -3186,6 +3195,10 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.0
+
+  '@m1nsuppp/prettier-config@0.0.2(prettier@3.5.3)':
+    dependencies:
+      prettier: 3.5.3
 
   '@next/env@15.3.0': {}
 
