@@ -1,18 +1,10 @@
 import type { JSX } from 'react';
+import { TShirtAreaLoader } from './_components/t-shirt-area-loader';
 
 export default function Page(): JSX.Element {
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '100vw',
-        height: '100svh',
-        backgroundColor: 'red',
-      }}
-    >
-      <p style={{ color: 'white' }}>hello</p>
+    <div className="w-full h-full">
+      <TShirtAreaLoader />
     </div>
   );
 }
