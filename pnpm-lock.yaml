@@ -115,6 +115,9 @@ importers:
       '@eslint/js':
         specifier: ^9.28.0
         version: 9.28.0
+      '@m1nsuppp/eslint-config':
+        specifier: ^0.0.6
+        version: 0.0.6(eslint@9.28.0(jiti@2.4.2))
       '@next/eslint-plugin-next':
         specifier: ^15.3.0
         version: 15.3.0
@@ -662,6 +665,11 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.25':
     resolution: {integrity: sha512-vNk6aEwybGtawWmy/PzwnGDOjCkLWSD2wqvjGGAgOAwCGWySYXfYoxt00IJkTF+8Lb57DwOb3Aa0o9CApepiYQ==}
+
+  '@m1nsuppp/eslint-config@0.0.6':
+    resolution: {integrity: sha512-4NrLGnpUEeUq3fxVZgHcyWTgCrZk/QU8hgx7HVlQZG/M/lJlFClj6mjr6qheNufRYK7aeKQSh6qcq4hQWsN9+g==}
+    peerDependencies:
+      eslint: ^9
 
   '@m1nsuppp/prettier-config@0.0.2':
     resolution: {integrity: sha512-brXibP/+ZmPFoIr4y2oJGYyX91bCH0knP6PnTL8eri4n2Yln2qJ0OX+VyaXMOrFQjgTSDXfjqWRafkBRfgO6PA==}
@@ -3640,6 +3648,10 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.0
+
+  '@m1nsuppp/eslint-config@0.0.6(eslint@9.28.0(jiti@2.4.2))':
+    dependencies:
+      eslint: 9.28.0(jiti@2.4.2)
 
   '@m1nsuppp/prettier-config@0.0.2(prettier@3.5.3)':
     dependencies:
