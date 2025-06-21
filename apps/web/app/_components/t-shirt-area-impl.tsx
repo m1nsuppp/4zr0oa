@@ -111,7 +111,6 @@ export function TShirtAreaImpl(): JSX.Element {
     <Stage
       width={stageWidth}
       height={stageHeight}
-      // eslint-disable-next-line complexity -- TODO: Refactor
       onClick={(e) => {
         if (selectionRect.visible) {
           return;
@@ -235,6 +234,11 @@ export function TShirtAreaImpl(): JSX.Element {
           onPointerOut={() => {
             updateCursor('out');
           }}
+          onDragStart={() => {
+            if (imageRef.current !== null) {
+              setSelectedIds([imageRef.current.id()]);
+            }
+          }}
           onTransformEnd={(e) => {
             const id = e.target.id();
             if (id !== createTShirtImageLayerIdBySide(tShirtSide)) {
@@ -268,13 +272,7 @@ export function TShirtAreaImpl(): JSX.Element {
             imageRef.current.y(e.target.y());
           }}
         />
-        <Transformer
-          ref={(transformer) => {
-            if (transformer !== null && imageRef.current !== null) {
-              transformerRef.current = transformer;
-            }
-          }}
-        />
+        <Transformer ref={transformerRef} />
 
         {selectionRect.visible && (
           <KonvaRect
