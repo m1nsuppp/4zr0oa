@@ -2,15 +2,11 @@
 
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type JSX } from 'react';
-import { Layer, Stage, Image, Transformer, Rect as KonvaRect } from 'react-konva';
+import { Layer, Stage, Image, Rect, Group, Text } from 'react-konva';
 import { loadImage } from '../../lib/load-image';
 import { useTShirtSide } from '../_hooks/use-t-shirt-side';
 import type { TShirtSide } from '../../models/t-shirt.model';
 import Konva from 'konva';
-
-function updateCursor(action: 'over' | 'out'): void {
-  document.body.style.cursor = action === 'over' ? 'pointer' : 'default';
-}
 
 const T_SHIRT_IMAGE_PATHS: Readonly<Record<TShirtSide, string>> = {
   front: '/crew-front.png',
@@ -68,13 +64,20 @@ function getClientRect(rect: {
   };
 }
 
-function createTShirtImageLayerIdBySide(side: TShirtSide): string {
-  return `t-shirt-image-${side}`;
-}
-
 function createTShirtImageLayerNameBySide(side: TShirtSide): string {
   return `t-shirt-image-name-${side}`;
 }
+
+const DESIGN_AREA_DIMENSIONS = {
+  front: {
+    width: 200,
+    height: 300,
+  },
+  back: {
+    width: 100,
+    height: 100,
+  },
+};
 
 export function TShirtAreaImpl(): JSX.Element {
   const { innerWidth: stageWidth, innerHeight: stageHeight } = window;
@@ -219,63 +222,76 @@ export function TShirtAreaImpl(): JSX.Element {
     >
       <Layer>
         <Image
-          id={createTShirtImageLayerIdBySide(tShirtSide)}
-          name={createTShirtImageLayerNameBySide(tShirtSide)}
           ref={imageRef}
           image={image}
           x={stageWidth / 2 - image.width / 2}
           y={stageHeight / 2 - image.height / 2}
           width={image.width}
           height={image.height}
-          draggable
-          onPointerOver={() => {
-            updateCursor('over');
-          }}
-          onPointerOut={() => {
-            updateCursor('out');
-          }}
-          onDragStart={() => {
-            if (imageRef.current !== null) {
-              setSelectedIds([imageRef.current.id()]);
-            }
-          }}
-          onTransformEnd={(e) => {
-            const id = e.target.id();
-            if (id !== createTShirtImageLayerIdBySide(tShirtSide)) {
-              return;
-            }
-
-            if (imageRef.current === null) {
-              return;
-            }
-
-            const scaleX = e.target.scaleX();
-            const scaleY = e.target.scaleY();
-
-            imageRef.current.scaleX(1);
-            imageRef.current.scaleY(1);
-
-            imageRef.current.width(Math.max(5, e.target.width() * scaleX));
-            imageRef.current.height(Math.max(e.target.height() * scaleY));
-          }}
-          onDragEnd={(e) => {
-            const id = e.target.id();
-            if (id !== createTShirtImageLayerIdBySide(tShirtSide)) {
-              return;
-            }
-
-            if (imageRef.current === null) {
-              return;
-            }
-
-            imageRef.current.x(e.target.x());
-            imageRef.current.y(e.target.y());
-          }}
         />
-        <Transformer ref={transformerRef} />
+
+        <Group
+          clipFunc={(ctx) => {
+            if (imageRef.current !== null) {
+              ctx.beginPath();
+              ctx.rect(
+                imageRef.current.x(),
+                imageRef.current.y(),
+                imageRef.current.width(),
+                imageRef.current.height(),
+              );
+              ctx.closePath();
+            }
+          }}
+        >
+          <Rect
+            x={stageWidth / 2 - DESIGN_AREA_DIMENSIONS[tShirtSide].width / 2}
+            y={stageHeight / 2 - DESIGN_AREA_DIMENSIONS[tShirtSide].height / 2}
+            width={DESIGN_AREA_DIMENSIONS[tShirtSide].width}
+            height={DESIGN_AREA_DIMENSIONS[tShirtSide].height}
+            stroke="black"
+            strokeWidth={2}
+          />
+
+          {/* 디자인 영역으로 클리핑된 그룹 */}
+          <Group
+            clipFunc={(ctx) => {
+              ctx.beginPath();
+              ctx.rect(
+                stageWidth / 2 - DESIGN_AREA_DIMENSIONS[tShirtSide].width / 2,
+                stageHeight / 2 - DESIGN_AREA_DIMENSIONS[tShirtSide].height / 2,
+                DESIGN_AREA_DIMENSIONS[tShirtSide].width,
+                DESIGN_AREA_DIMENSIONS[tShirtSide].height,
+              );
+              ctx.closePath();
+            }}
+          >
+            {/* 사용자 콘텐츠 그룹 */}
+            <Group
+              id="userContentGroup"
+              draggable
+              x={stageWidth / 2 - DESIGN_AREA_DIMENSIONS[tShirtSide].width / 2 + 50}
+              y={stageHeight / 2 - DESIGN_AREA_DIMENSIONS[tShirtSide].height / 2 + 50}
+            >
+              <Rect
+                width={100}
+                height={100}
+                fill="orange"
+              />
+              <Text
+                text="내 티셔츠"
+                fontSize={20}
+                fill="black"
+                y={120}
+                width={100}
+                align="center"
+              />
+            </Group>
+          </Group>
+        </Group>
 
         {selectionRect.visible && (
-          <KonvaRect
+          <Rect
             x={Math.min(selectionRect.x1, selectionRect.x2)}
             y={Math.min(selectionRect.y1, selectionRect.y2)}
             width={Math.abs(selectionRect.x2 - selectionRect.x1)}
