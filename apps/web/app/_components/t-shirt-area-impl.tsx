@@ -2,7 +2,7 @@
 
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type JSX } from 'react';
-import { Layer, Stage, Image, Rect, Group, Text } from 'react-konva';
+import { Layer, Stage, Image, Rect, Group } from 'react-konva';
 import { loadImage } from '../../lib/load-image';
 import { useTShirtSide } from '../_hooks/use-t-shirt-side';
 import type { TShirtSide } from '../../models/t-shirt.model';
@@ -228,6 +228,7 @@ export function TShirtAreaImpl(): JSX.Element {
           y={stageHeight / 2 - image.height / 2}
           width={image.width}
           height={image.height}
+          listening={false}
         />
 
         <Group
@@ -251,9 +252,9 @@ export function TShirtAreaImpl(): JSX.Element {
             height={DESIGN_AREA_DIMENSIONS[tShirtSide].height}
             stroke="black"
             strokeWidth={2}
+            listening={false}
           />
 
-          {/* 디자인 영역으로 클리핑된 그룹 */}
           <Group
             clipFunc={(ctx) => {
               ctx.beginPath();
@@ -266,7 +267,6 @@ export function TShirtAreaImpl(): JSX.Element {
               ctx.closePath();
             }}
           >
-            {/* 사용자 콘텐츠 그룹 */}
             <Group
               id="userContentGroup"
               draggable
@@ -277,14 +277,6 @@ export function TShirtAreaImpl(): JSX.Element {
                 width={100}
                 height={100}
                 fill="orange"
-              />
-              <Text
-                text="내 티셔츠"
-                fontSize={20}
-                fill="black"
-                y={120}
-                width={100}
-                align="center"
               />
             </Group>
           </Group>
