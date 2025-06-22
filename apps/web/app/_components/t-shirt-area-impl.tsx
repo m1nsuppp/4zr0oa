@@ -1,8 +1,8 @@
 'use client';
 
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { useEffect, useRef, useState, type JSX } from 'react';
-import { Layer, Stage, Image, Rect, Group } from 'react-konva';
+import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
+import { Layer, Stage, Image, Rect, Group, Transformer } from 'react-konva';
 import { loadImage } from '../../lib/load-image';
 import { useTShirtSide } from '../_hooks/use-t-shirt-side';
 import type { TShirtSide } from '../../models/t-shirt.model';
@@ -13,9 +13,9 @@ const T_SHIRT_IMAGE_PATHS: Readonly<Record<TShirtSide, string>> = {
   back: '/crew-back.png',
 };
 
-function degToRad(angle: number): number {
-  return (angle / 180) * Math.PI;
-}
+const USER_CONTENT_GROUP_ID = 'userContentGroup';
+
+const degToRad = (angle: number): number => (angle / 180) * Math.PI;
 
 const getDistance = (diffX: number, diffY: number): number =>
   Math.sqrt(diffX * diffX + diffY * diffY);
@@ -64,10 +64,6 @@ function getClientRect(rect: {
   };
 }
 
-function createTShirtImageLayerNameBySide(side: TShirtSide): string {
-  return `t-shirt-image-name-${side}`;
-}
-
 const DESIGN_AREA_DIMENSIONS = {
   front: {
     width: 200,
@@ -82,8 +78,31 @@ const DESIGN_AREA_DIMENSIONS = {
 export function TShirtAreaImpl(): JSX.Element {
   const { innerWidth: stageWidth, innerHeight: stageHeight } = window;
 
+  const [userContentRect, setUserContentRect] = useState<{
+    id: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    rotation: number;
+    fill: string;
+  }>({
+    id: 'userContentRect',
+    width: 100,
+    height: 100,
+    x: DESIGN_AREA_DIMENSIONS.front.width / 2 - 100 / 2,
+    y: DESIGN_AREA_DIMENSIONS.front.height / 2 - 100 / 2,
+    rotation: 0,
+    fill: 'orange',
+  });
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [selectionRect, setSelectionRect] = useState({
+  const [selectionRect, setSelectionRect] = useState<{
+    visible: boolean;
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+  }>({
     visible: false,
     x1: 0,
     y1: 0,
@@ -93,6 +112,8 @@ export function TShirtAreaImpl(): JSX.Element {
 
   const imageRef = useRef<Konva.Image>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
+  type NodeId = string;
+  const nodeRefs = useRef<Map<NodeId, Konva.Rect>>(new Map());
   const isSelecting = useRef<boolean>(false);
 
   const [tShirtSide] = useTShirtSide();
@@ -102,9 +123,18 @@ export function TShirtAreaImpl(): JSX.Element {
     staleTime: Infinity,
   });
 
+  const { userContentGroupOriginX, userContentGroupOriginY } = useMemo(() => {
+    const userContentGroupOriginX = stageWidth / 2 - DESIGN_AREA_DIMENSIONS[tShirtSide].width / 2;
+    const userContentGroupOriginY = stageHeight / 2 - DESIGN_AREA_DIMENSIONS[tShirtSide].height / 2;
+
+    return { userContentGroupOriginX, userContentGroupOriginY };
+  }, [stageWidth, stageHeight, tShirtSide]);
+
   useEffect(() => {
     if (selectedIds.length > 0 && transformerRef.current !== null && imageRef.current !== null) {
-      transformerRef.current.nodes([imageRef.current]);
+      transformerRef.current.nodes(
+        selectedIds.map((id) => nodeRefs.current.get(id)).filter((node) => node !== undefined),
+      );
     } else if (transformerRef.current !== null) {
       transformerRef.current.nodes([]);
     }
@@ -125,12 +155,7 @@ export function TShirtAreaImpl(): JSX.Element {
           return;
         }
 
-        if (!e.target.hasName(createTShirtImageLayerNameBySide(tShirtSide))) {
-          return;
-        }
-
         const clickedId = e.target.id();
-
         const metaPressed = e.evt.shiftKey || e.evt.ctrlKey || e.evt.metaKey;
         const isSelected = selectedIds.includes(clickedId);
 
@@ -191,10 +216,6 @@ export function TShirtAreaImpl(): JSX.Element {
           });
         });
 
-        if (imageRef.current === null) {
-          return;
-        }
-
         const selectionBox = {
           x: Math.min(selectionRect.x1, selectionRect.x2),
           y: Math.min(selectionRect.y1, selectionRect.y2),
@@ -202,19 +223,19 @@ export function TShirtAreaImpl(): JSX.Element {
           height: Math.abs(selectionRect.y2 - selectionRect.y1),
         };
 
+        const absoluteUserContentRect = {
+          ...userContentRect,
+          x: userContentRect.x + userContentGroupOriginX,
+          y: userContentRect.y + userContentGroupOriginY,
+        };
+
         const isSelected = Konva.Util.haveIntersection(
           selectionBox,
-          getClientRect({
-            x: imageRef.current.x(),
-            y: imageRef.current.y(),
-            width: imageRef.current.width(),
-            height: imageRef.current.height(),
-            rotation: imageRef.current.rotation(),
-          }),
+          getClientRect(absoluteUserContentRect),
         );
 
         if (isSelected) {
-          setSelectedIds([imageRef.current.id()]);
+          setSelectedIds([userContentRect.id]);
         } else {
           setSelectedIds([]);
         }
@@ -246,8 +267,8 @@ export function TShirtAreaImpl(): JSX.Element {
           }}
         >
           <Rect
-            x={stageWidth / 2 - DESIGN_AREA_DIMENSIONS[tShirtSide].width / 2}
-            y={stageHeight / 2 - DESIGN_AREA_DIMENSIONS[tShirtSide].height / 2}
+            x={userContentGroupOriginX}
+            y={userContentGroupOriginY}
             width={DESIGN_AREA_DIMENSIONS[tShirtSide].width}
             height={DESIGN_AREA_DIMENSIONS[tShirtSide].height}
             stroke="black"
@@ -259,8 +280,8 @@ export function TShirtAreaImpl(): JSX.Element {
             clipFunc={(ctx) => {
               ctx.beginPath();
               ctx.rect(
-                stageWidth / 2 - DESIGN_AREA_DIMENSIONS[tShirtSide].width / 2,
-                stageHeight / 2 - DESIGN_AREA_DIMENSIONS[tShirtSide].height / 2,
+                userContentGroupOriginX,
+                userContentGroupOriginY,
                 DESIGN_AREA_DIMENSIONS[tShirtSide].width,
                 DESIGN_AREA_DIMENSIONS[tShirtSide].height,
               );
@@ -268,19 +289,62 @@ export function TShirtAreaImpl(): JSX.Element {
             }}
           >
             <Group
-              id="userContentGroup"
-              draggable
-              x={stageWidth / 2 - DESIGN_AREA_DIMENSIONS[tShirtSide].width / 2 + 50}
-              y={stageHeight / 2 - DESIGN_AREA_DIMENSIONS[tShirtSide].height / 2 + 50}
+              id={USER_CONTENT_GROUP_ID}
+              x={userContentGroupOriginX}
+              y={userContentGroupOriginY}
             >
               <Rect
-                width={100}
-                height={100}
-                fill="orange"
+                id={userContentRect.id}
+                ref={(node) => {
+                  if (node !== null) {
+                    nodeRefs.current.set(node.id(), node);
+                  }
+                }}
+                draggable
+                x={userContentRect.x}
+                y={userContentRect.y}
+                width={userContentRect.width}
+                height={userContentRect.height}
+                rotation={userContentRect.rotation}
+                fill={userContentRect.fill}
+                onDragStart={() => {
+                  setSelectedIds([userContentRect.id]);
+                }}
+                onDragEnd={(e) => {
+                  setUserContentRect((prev) => ({
+                    ...prev,
+                    x: e.target.x(),
+                    y: e.target.y(),
+                  }));
+                }}
+                onTransformEnd={(e) => {
+                  const scaleX = e.target.scaleX();
+                  const scaleY = e.target.scaleY();
+
+                  e.target.scaleX(1);
+                  e.target.scaleY(1);
+
+                  setUserContentRect((prev) => ({
+                    ...prev,
+                    x: e.target.x(),
+                    y: e.target.y(),
+                    width: Math.max(5, e.target.width() * scaleX),
+                    height: Math.max(5, e.target.height() * scaleY),
+                    rotation: e.target.rotation(),
+                  }));
+                }}
               />
             </Group>
           </Group>
         </Group>
+
+        <Transformer
+          ref={(node) => {
+            if (node !== null) {
+              transformerRef.current = node;
+            }
+          }}
+        />
 
         {selectionRect.visible && (
           <Rect
